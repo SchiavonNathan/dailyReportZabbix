@@ -42,7 +42,7 @@ def remove_acentos(text):
     return unicodedata.normalize('NFKD', text).encode('ASCII', 'ignore').decode('ASCII')
 
 # Substitui configuração de logging para padrão APM JSON
-logging.basicConfig(handlers=[])  # Remove handlers default
+logging.basicConfig(handlers=[]) 
 handler = logging.StreamHandler()
 handler.setFormatter(APMJsonFormatter())
 logger = logging.getLogger()

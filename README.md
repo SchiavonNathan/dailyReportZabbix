@@ -23,10 +23,6 @@ Sistema automatizado para monitorar mudanças nos hosts cadastrados no Zabbix, g
 
 ### 1. Clone ou baixe o projeto
 
-```bash
-cd c:\projetos-ultra\dailyReportZabbix
-```
-
 ### 2. Crie um ambiente virtual (opcional, mas recomendado)
 
 ```powershell
@@ -226,99 +222,9 @@ EMAIL_RECIPIENTS=email1@empresa.com,email2@empresa.com,email3@empresa.com
 ```env
 SEND_EMAIL=false
 ```
-
-## 🔄 Agendamento no Windows (Task Scheduler)
-
-Para executar automaticamente no Windows sem manter o terminal aberto:
-
-1. Abra o **Agendador de Tarefas** (Task Scheduler)
-2. Crie uma nova tarefa
-3. Configure para executar diariamente às 06:00
-4. Ação: Executar programa
-   - Programa: `C:\caminho\para\python.exe`
-   - Argumentos: `C:\projetos-ultra\dailyReportZabbix\main.py`
-   - Iniciar em: `C:\projetos-ultra\dailyReportZabbix`
-
 ## 📝 Logs
 
 Os logs são salvos automaticamente:
 
 - `zabbix_daily_report.log` - Log de execuções do script principal
 - `zabbix_scheduler.log` - Log do agendador automático
-
-## ⚠️ Solução de Problemas
-
-### Erro de conexão com Zabbix
-
-```
-Erro ao conectar ao Zabbix
-```
-
-**Solução**: Verifique a URL, usuário e senha no arquivo `.env`
-
-### Nenhuma coleta anterior para comparação
-
-```
-Não há coleta anterior para comparação
-```
-
-**Solução**: Execute a coleta por pelo menos 2 dias consecutivos para gerar comparações
-
-### Módulo não encontrado
-
-```
-ModuleNotFoundError: No module named 'pyzabbix'
-```
-
-**Solução**: Instale as dependências com `pip install -r requirements.txt`
-
-### Erro ao enviar email
-
-```
-SMTPAuthenticationError: Username and Password not accepted
-```
-
-**Solução para Office 365**: 
-- Verifique se o email e senha estão corretos
-- Para contas com autenticação multifator (MFA), crie uma senha de app
-- Verifique se a conta tem permissão para SMTP
-
-**Solução para Gmail**:
-- Ative "Acesso a apps menos seguros" ou use senha de app
-- Crie senha de app em: https://myaccount.google.com/apppasswords
-
-### Email não chega
-
-**Solução**:
-1. Verifique a pasta de spam/lixo eletrônico
-2. Confirme que `SEND_EMAIL=true` no .env
-3. Verifique se `EMAIL_RECIPIENTS` está configurado corretamente
-4. Revise os logs em `zabbix_daily_report.log` para detalhes do erro
-
-## 🤝 Contribuindo
-
-Sinta-se à vontade para:
-
-1. Reportar bugs
-2. Sugerir melhorias
-3. Enviar pull requests
-
-## 📄 Licença
-
-Este projeto é de uso livre para fins educacionais e corporativos.
-
-## 👤 Autor
-
-Desenvolvido para monitoramento automatizado de infraestrutura Zabbix.
-
-## 📞 Suporte
-
-Para dúvidas ou problemas:
-
-1. Verifique os logs em `zabbix_daily_report.log`
-2. Consulte a documentação do Zabbix API
-3. Revise as configurações no arquivo `.env`
-
----
-
-**Última atualização**: Outubro de 2025
