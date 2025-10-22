@@ -1,0 +1,38 @@
+*.pyc
+__pycache__/
+*.pyo
+*.pyd
+.Python
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+*.log
+
+# Ambiente virtual
+venv/
+env/
+ENV/
+
+# Arquivo de configuração com credenciais
+.env
+
+# Banco de dados
+*.db
+*.sqlite
+*.sqlite3
+
+# Diretório de relatórios
+reports/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
