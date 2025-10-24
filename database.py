@@ -6,7 +6,7 @@ from datetime import datetime
 from typing import List, Dict, Tuple
 import logging
 
-logging.basicConfig(level=logging.INFO)
+# Não configura logging aqui - deixa para o módulo principal configurar
 logger = logging.getLogger(__name__)
 
 
@@ -54,6 +54,7 @@ class DatabaseManager:
     def save_hosts(self, hosts: List[Dict[str, str]], collection_date: str = None):
         """
         Salva a lista de hosts no banco de dados.
+        Remove registros existentes da mesma data antes de salvar para evitar duplicatas.
         
         Args:
             hosts: Lista de dicionários com informações dos hosts
@@ -65,6 +66,15 @@ class DatabaseManager:
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
         
+        # Remove registros existentes da mesma data para evitar duplicatas
+        cursor.execute('''
+            DELETE FROM hosts_history
+            WHERE collection_date = ?
+        ''', (collection_date,))
+        
+        logger.info(f"Registros anteriores da data {collection_date} removidos")
+        
+        # Insere os novos registros
         for host in hosts:
             cursor.execute('''
                 INSERT INTO hosts_history (host_id, hostname, ip_address, host_groups, collection_date)

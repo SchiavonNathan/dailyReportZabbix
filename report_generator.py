@@ -6,7 +6,7 @@ from typing import Dict
 import logging
 import os
 
-logging.basicConfig(level=logging.INFO)
+# Não configura logging aqui - deixa para o módulo principal configurar
 logger = logging.getLogger(__name__)
 
 

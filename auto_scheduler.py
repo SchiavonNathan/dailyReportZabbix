@@ -13,16 +13,7 @@ from email_sender import EmailSender
 import json
 import unicodedata
 
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler('zabbix_scheduler.log'),
-        logging.StreamHandler()
-    ]
-)
-logger = logging.getLogger(__name__)
-
+# Classe para formatação JSON do APM
 class APMJsonFormatter(logging.Formatter):
     def format(self, record):
         log_record = {
@@ -41,19 +32,6 @@ def remove_acentos(text):
         return text
     return unicodedata.normalize('NFKD', text).encode('ASCII', 'ignore').decode('ASCII')
 
-# Substitui configuração de logging para padrão APM JSON
-logging.basicConfig(handlers=[]) 
-handler = logging.StreamHandler()
-handler.setFormatter(APMJsonFormatter())
-logger = logging.getLogger()
-logger.handlers = [handler]
-logger.setLevel(logging.INFO)
-
-# File handler para log persistente (opcional, formato APM)
-file_handler = logging.FileHandler('zabbix_scheduler.log')
-file_handler.setFormatter(APMJsonFormatter())
-logger.addHandler(file_handler)
-
 # Patch no logger para remover acentos das mensagens
 class APMJsonFormatterNoAcento(APMJsonFormatter):
     def format(self, record):
@@ -61,8 +39,16 @@ class APMJsonFormatterNoAcento(APMJsonFormatter):
             record.msg = remove_acentos(record.msg)
         return super().format(record)
 
+# Configura logging apenas uma vez
+handler = logging.StreamHandler()
 handler.setFormatter(APMJsonFormatterNoAcento())
+
+file_handler = logging.FileHandler('zabbix_scheduler.log')
 file_handler.setFormatter(APMJsonFormatterNoAcento())
+
+logger = logging.getLogger()
+logger.handlers = [handler, file_handler]
+logger.setLevel(logging.INFO)
 
 def get_period_dates(db, days):
     all_dates = db.get_all_collection_dates()
@@ -74,15 +60,32 @@ def get_period_dates(db, days):
 
 
 def generate_period_summary(db, dates):
+    """
+    Gera resumo do período comparando múltiplas datas.
+    
+    Args:
+        db: Instância do DatabaseManager
+        dates: Lista de datas ordenadas para o período
+        
+    Returns:
+        Tuple com (summary, comparison)
+    """
     comparator = HostComparator()
-    total_added = 0
-    total_removed = 0
-    total_modified = 0
-    total_current = 0
-    total_previous = 0
     all_added = []
     all_removed = []
     all_modified = []
+    
+    # Pega total atual da data mais recente e total anterior da data mais antiga
+    current_hosts_final = db.get_hosts_by_date(dates[-1])  # Última data (mais recente)
+    previous_hosts_initial = db.get_hosts_by_date(dates[0])  # Primeira data (mais antiga)
+    total_current = len(current_hosts_final)
+    total_previous = len(previous_hosts_initial)
+    
+    # Soma todas as mudanças do período
+    total_added = 0
+    total_removed = 0
+    total_modified = 0
+    
     for i in range(1, len(dates)):
         current_hosts = db.get_hosts_by_date(dates[i])
         previous_hosts = db.get_hosts_by_date(dates[i-1])
@@ -90,11 +93,10 @@ def generate_period_summary(db, dates):
         total_added += len(comp['added'])
         total_removed += len(comp['removed'])
         total_modified += len(comp['modified'])
-        total_current = comp['total_current']
-        total_previous = comp['total_previous']
         all_added.extend(comp['added'])
         all_removed.extend(comp['removed'])
         all_modified.extend(comp['modified'])
+    
     summary = {
         'hosts_added': total_added,
         'hosts_removed': total_removed,
@@ -114,25 +116,47 @@ def generate_period_summary(db, dates):
 
 
 def send_period_report(period_name, days):
-    logger.info(f"Iniciando relatório de {period_name}...")
+    """
+    Gera e envia relatório de período (semanal ou mensal).
+    
+    Args:
+        period_name: Nome do período ('semanal' ou 'mensal')
+        days: Número de dias do período
+    """
+    logger.info(f"Iniciando relatorio de {period_name}...")
+    
     config = load_config()
     db = DatabaseManager(config['database_path'])
     dates = get_period_dates(db, days)
+    
     if len(dates) < 2:
-        logger.warning(f"Não há dados suficientes para gerar o relatório de {period_name}.")
+        logger.warning(f"Nao ha dados suficientes para gerar o relatorio de {period_name}.")
+        logger.warning(f"Necessario pelo menos 2 datas, encontradas: {len(dates)}")
         return
+    
     dates = sorted(dates)
+    logger.info(f"Periodo: {dates[0]} a {dates[-1]} ({len(dates)} datas)")
+    
+    # Gera resumo do período
     summary, comparison = generate_period_summary(db, dates)
+    
+    # Gera relatórios
     report_gen = ReportGenerator(config['reports_dir'])
     report_format = config['report_format'].lower()
     report_files = []
     period_label = f"{period_name.capitalize()} {dates[0]} a {dates[-1]}"
+    
     if report_format in ['html', 'both']:
         html_path = report_gen.generate_html_report(comparison, dates[-1], dates[0])
         report_files.append(html_path)
+        logger.info(f"Relatorio HTML gerado: {html_path}")
+    
     if report_format in ['text', 'both']:
         text_path = report_gen.generate_text_report(comparison, dates[-1], dates[0])
         report_files.append(text_path)
+        logger.info(f"Relatorio TXT gerado: {text_path}")
+    
+    # Envia por email se configurado
     if config['send_email']:
         email_sender = EmailSender(
             smtp_server=config['smtp_server'],
@@ -141,8 +165,10 @@ def send_period_report(period_name, days):
             password=config['smtp_password'],
             use_tls=config['smtp_use_tls']
         )
+        
         attachments = report_files if config['email_attach_reports'] else None
-        subject = f"📊 Relatório {period_name.capitalize()} Zabbix: {dates[0]} a {dates[-1]}"
+        subject = f"Relatorio {period_name.capitalize()} Zabbix: {dates[0]} a {dates[-1]}"
+        
         email_sender.send_simple_report(
             recipient_emails=config['email_recipients'],
             report_date=period_label,
@@ -151,46 +177,101 @@ def send_period_report(period_name, days):
             comparison=comparison,
             report_files=attachments
         )
+        
         logger.info(f"Email de {period_name} enviado para: {', '.join(config['email_recipients'])}")
     else:
-        logger.info(f"Envio de email desabilitado para relatório de {period_name}.")
+        logger.info(f"Envio de email desabilitado para relatorio de {period_name}.")
 
 
 def daily_job():
-    logger.info("Iniciando job diário...")
-    config = load_config()
-    collection_date = collect_hosts(config)
-    if collection_date:
-        generate_comparison_report(config)
-        logger.info("✅ Relatório diário concluído!")
-    else:
-        logger.warning("⚠️ Coleta não realizada, relatório diário não gerado.")
+    """Executa o job diário de coleta e geração de relatório."""
+    logger.info("=" * 80)
+    logger.info("Iniciando job diario...")
+    logger.info("=" * 80)
+    try:
+        config = load_config()
+        logger.info("Configuracoes carregadas com sucesso")
+        
+        # Coleta hosts do Zabbix
+        collection_date = collect_hosts(config)
+        
+        if collection_date:
+            logger.info(f"Coleta concluida para a data: {collection_date}")
+            
+            # Gera relatório comparativo
+            generate_comparison_report(config)
+            logger.info("Relatorio diario concluido!")
+        else:
+            logger.warning("Coleta nao realizada, relatorio diario nao gerado.")
+    except Exception as e:
+        logger.error(f"Erro no job diario: {e}", exc_info=True)
+    logger.info("=" * 80)
 
 def weekly_job():
-    send_period_report('semanal', 7)
+    """Executa o job semanal."""
+    logger.info("=" * 80)
+    logger.info("Iniciando job semanal...")
+    logger.info("=" * 80)
+    try:
+        send_period_report('semanal', 7)
+        logger.info("Relatorio semanal concluido!")
+    except Exception as e:
+        logger.error(f"Erro no job semanal: {e}", exc_info=True)
+    logger.info("=" * 80)
 
 def monthly_job_guard():
+    """
+    Guarda para executar o job mensal apenas no dia 1 do mês.
+    """
     if datetime.now().day == 1:
         monthly_job()
+    else:
+        logger.debug(f"Dia {datetime.now().day} - pulando job mensal (executa apenas no dia 1)")
 
 def monthly_job():
-    send_period_report('mensal', 31)
+    """Executa o job mensal."""
+    logger.info("=" * 80)
+    logger.info("Iniciando job mensal...")
+    logger.info("=" * 80)
+    try:
+        send_period_report('mensal', 31)
+        logger.info("Relatorio mensal concluido!")
+    except Exception as e:
+        logger.error(f"Erro no job mensal: {e}", exc_info=True)
+    logger.info("=" * 80)
 
 
 def main():
-    logger.info("Agendador de relatórios diário, semanal e mensal iniciado.")
-    # Diário: todo dia às 06:00
+    """
+    Função principal do agendador.
+    Configura os jobs e entra em loop de execução.
+    """
+    logger.info("=" * 80)
+    logger.info("Agendador de relatorios Zabbix iniciado")
+    logger.info("=" * 80)
+    
+    # Configura os jobs
     schedule.every().day.at("06:00").do(daily_job)
-    # Semanal: toda sexta às 18:00
     schedule.every().friday.at("18:00").do(weekly_job)
-    # Mensal: todo dia às 08:00, mas só executa se for dia 1
     schedule.every().day.at("08:00").do(monthly_job_guard)
-    logger.info("Relatório diário: todo dia às 06:00")
-    logger.info("Relatório semanal: toda sexta às 18:00")
-    logger.info("Relatório mensal: todo dia 1 às 08:00")
-    while True:
-        schedule.run_pending()
-        time.sleep(60)
+    
+    logger.info("Jobs configurados:")
+    logger.info("  - Relatorio diario: todo dia as 06:00")
+    logger.info("  - Relatorio semanal: toda sexta as 18:00")
+    logger.info("  - Relatorio mensal: todo dia 1 as 08:00")
+    logger.info("=" * 80)
+    
+    # Loop principal
+    try:
+        while True:
+            schedule.run_pending()
+            time.sleep(60)
+    except KeyboardInterrupt:
+        logger.info("=" * 80)
+        logger.info("Agendador interrompido pelo usuario")
+        logger.info("=" * 80)
+    except Exception as e:
+        logger.error(f"Erro no loop principal: {e}", exc_info=True)
 
 
 if __name__ == "__main__":

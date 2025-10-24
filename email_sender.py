@@ -10,7 +10,7 @@ from email import encoders
 from typing import List
 import logging
 
-logging.basicConfig(level=logging.INFO)
+# Não configura logging aqui - deixa para o módulo principal configurar
 logger = logging.getLogger(__name__)
 
 
