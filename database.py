@@ -77,13 +77,14 @@ class DatabaseManager:
         # Insere os novos registros
         for host in hosts:
             cursor.execute('''
-                INSERT INTO hosts_history (host_id, hostname, ip_address, host_groups, collection_date)
-                VALUES (?, ?, ?, ?, ?)
+                INSERT INTO hosts_history (host_id, hostname, ip_address, host_groups, templates, collection_date)
+                VALUES (?, ?, ?, ?, ?, ?)
             ''', (
                 host.get('host_id'),
                 host.get('hostname'),
                 host.get('ip_address'),
                 host.get('host_groups'),
+                host.get('templates', 'N/A'),
                 collection_date
             ))
         
@@ -105,7 +106,7 @@ class DatabaseManager:
         cursor = conn.cursor()
         
         cursor.execute('''
-            SELECT host_id, hostname, ip_address, host_groups
+            SELECT host_id, hostname, ip_address, host_groups, templates
             FROM hosts_history
             WHERE collection_date = ?
             ORDER BY hostname
@@ -119,7 +120,8 @@ class DatabaseManager:
                 'host_id': row[0],
                 'hostname': row[1],
                 'ip_address': row[2],
-                'host_groups': row[3]
+                'host_groups': row[3],
+                'templates': row[4] if len(row) > 4 else 'N/A'
             }
             for row in rows
         ]

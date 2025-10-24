@@ -352,17 +352,20 @@ class EmailSender:
                         <th>Nome do Host</th>
                         <th>Endereço IP</th>
                         <th>Grupos</th>
+                        <th>Templates</th>
                     </tr>
                 </thead>
                 <tbody>
 """
             for host in sorted(comparison['added'], key=lambda x: x['hostname']):
+                templates = host.get('templates', 'N/A')
                 html += f"""
                     <tr class="added">
                         <td>{host['host_id']}</td>
                         <td><strong>{host['hostname']}</strong></td>
                         <td>{host['ip_address']}</td>
                         <td>{host['host_groups']}</td>
+                        <td>{templates}</td>
                     </tr>
 """
             html += """
@@ -383,17 +386,20 @@ class EmailSender:
                         <th>Nome do Host</th>
                         <th>Endereço IP</th>
                         <th>Grupos</th>
+                        <th>Templates</th>
                     </tr>
                 </thead>
                 <tbody>
 """
             for host in sorted(comparison['removed'], key=lambda x: x['hostname']):
+                templates = host.get('templates', 'N/A')
                 html += f"""
                     <tr class="removed">
                         <td>{host['host_id']}</td>
                         <td><strong>{host['hostname']}</strong></td>
                         <td>{host['ip_address']}</td>
                         <td>{host['host_groups']}</td>
+                        <td>{templates}</td>
                     </tr>
 """
             html += """
@@ -438,6 +444,16 @@ class EmailSender:
                         <td>Grupos</td>
                         <td>{host['old_groups']}</td>
                         <td>{host['new_groups']}</td>
+                    </tr>
+"""
+                if host.get('templates_changed'):
+                    html += f"""
+                    <tr class="modified">
+                        <td>{host['host_id']}</td>
+                        <td><strong>{host['hostname']}</strong></td>
+                        <td>Templates</td>
+                        <td>{host.get('old_templates', 'N/A')}</td>
+                        <td>{host.get('new_templates', 'N/A')}</td>
                     </tr>
 """
             html += """
@@ -500,24 +516,30 @@ Hosts Modificados: {summary['hosts_modified']}
             text += f"\n{'=' * 80}\n"
             text += f"HOSTS ADICIONADOS ({len(comparison['added'])})\n"
             text += f"{'=' * 80}\n"
-            text += f"{'ID':<15} {'Nome do Host':<30} {'IP':<20} {'Grupos':<30}\n"
+            text += f"{'ID':<12} {'Nome':<25} {'IP':<15} {'Grupos':<25}\n"
             text += f"{'-' * 80}\n"
             for host in sorted(comparison['added'], key=lambda x: x['hostname']):
-                hostname = host['hostname'][:29] if len(host['hostname']) > 29 else host['hostname']
-                groups = host['host_groups'][:29] if len(host['host_groups']) > 29 else host['host_groups']
-                text += f"{host['host_id']:<15} {hostname:<30} {host['ip_address']:<20} {groups:<30}\n"
+                hostname = host['hostname'][:24] if len(host['hostname']) > 24 else host['hostname']
+                groups = host['host_groups'][:24] if len(host['host_groups']) > 24 else host['host_groups']
+                text += f"{host['host_id']:<12} {hostname:<25} {host['ip_address']:<15} {groups:<25}\n"
+                templates = host.get('templates', 'N/A')
+                if templates != 'N/A':
+                    text += f"             Templates: {templates}\n"
         
         # Detalhes dos hosts removidos
         if comparison and comparison.get('removed'):
             text += f"\n{'=' * 80}\n"
             text += f"HOSTS REMOVIDOS ({len(comparison['removed'])})\n"
             text += f"{'=' * 80}\n"
-            text += f"{'ID':<15} {'Nome do Host':<30} {'IP':<20} {'Grupos':<30}\n"
+            text += f"{'ID':<12} {'Nome':<25} {'IP':<15} {'Grupos':<25}\n"
             text += f"{'-' * 80}\n"
             for host in sorted(comparison['removed'], key=lambda x: x['hostname']):
-                hostname = host['hostname'][:29] if len(host['hostname']) > 29 else host['hostname']
-                groups = host['host_groups'][:29] if len(host['host_groups']) > 29 else host['host_groups']
-                text += f"{host['host_id']:<15} {hostname:<30} {host['ip_address']:<20} {groups:<30}\n"
+                hostname = host['hostname'][:24] if len(host['hostname']) > 24 else host['hostname']
+                groups = host['host_groups'][:24] if len(host['host_groups']) > 24 else host['host_groups']
+                text += f"{host['host_id']:<12} {hostname:<25} {host['ip_address']:<15} {groups:<25}\n"
+                templates = host.get('templates', 'N/A')
+                if templates != 'N/A':
+                    text += f"             Templates: {templates}\n"
         
         # Detalhes dos hosts modificados
         if comparison and comparison.get('modified'):
@@ -534,6 +556,10 @@ Hosts Modificados: {summary['hosts_modified']}
                     old_g = host['old_groups'][:19] if len(host['old_groups']) > 19 else host['old_groups']
                     new_g = host['new_groups'][:19] if len(host['new_groups']) > 19 else host['new_groups']
                     text += f"{host['host_id']:<15} {hostname:<25} {'Grupos':<10} {old_g:<20} {new_g:<20}\n"
+                if host.get('templates_changed'):
+                    old_t = host.get('old_templates', 'N/A')[:19] if len(host.get('old_templates', 'N/A')) > 19 else host.get('old_templates', 'N/A')
+                    new_t = host.get('new_templates', 'N/A')[:19] if len(host.get('new_templates', 'N/A')) > 19 else host.get('new_templates', 'N/A')
+                    text += f"{host['host_id']:<15} {hostname:<25} {'Templates':<10} {old_t:<20} {new_t:<20}\n"
         
         text += f"\n{'=' * 80}\n"
         if has_changes:

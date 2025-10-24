@@ -224,17 +224,20 @@ class ReportGenerator:
                     <th>Nome do Host</th>
                     <th>Endereço IP</th>
                     <th>Grupos</th>
+                    <th>Templates</th>
                 </tr>
             </thead>
             <tbody>
 """
                 for host in sorted(comparison['added'], key=lambda x: x['hostname']):
+                    templates = host.get('templates', 'N/A')
                     html += f"""
                 <tr class="added">
                     <td>{host['host_id']}</td>
                     <td>{host['hostname']}</td>
                     <td>{host['ip_address']}</td>
                     <td>{host['host_groups']}</td>
+                    <td>{templates}</td>
                 </tr>
 """
                 html += """
@@ -253,17 +256,20 @@ class ReportGenerator:
                     <th>Nome do Host</th>
                     <th>Endereço IP</th>
                     <th>Grupos</th>
+                    <th>Templates</th>
                 </tr>
             </thead>
             <tbody>
 """
                 for host in sorted(comparison['removed'], key=lambda x: x['hostname']):
+                    templates = host.get('templates', 'N/A')
                     html += f"""
                 <tr class="removed">
                     <td>{host['host_id']}</td>
                     <td>{host['hostname']}</td>
                     <td>{host['ip_address']}</td>
                     <td>{host['host_groups']}</td>
+                    <td>{templates}</td>
                 </tr>
 """
                 html += """
@@ -306,6 +312,16 @@ class ReportGenerator:
                     <td>Grupos</td>
                     <td>{host['old_groups']}</td>
                     <td>{host['new_groups']}</td>
+                </tr>
+"""
+                    if host.get('templates_changed'):
+                        html += f"""
+                <tr class="modified">
+                    <td>{host['host_id']}</td>
+                    <td>{host['hostname']}</td>
+                    <td>Templates</td>
+                    <td>{host.get('old_templates', 'N/A')}</td>
+                    <td>{host.get('new_templates', 'N/A')}</td>
                 </tr>
 """
                 html += """
@@ -359,20 +375,30 @@ class ReportGenerator:
                 lines.append("\n" + "=" * 80)
                 lines.append(f"HOSTS ADICIONADOS ({len(comparison['added'])})")
                 lines.append("=" * 80)
-                lines.append(f"{'ID':<15} {'Nome do Host':<30} {'Endereço IP':<20} {'Grupos':<30}")
+                lines.append(f"{'ID':<12} {'Nome':<25} {'IP':<15} {'Grupos':<25}")
                 lines.append("-" * 80)
                 for host in sorted(comparison['added'], key=lambda x: x['hostname']):
-                    lines.append(f"{host['host_id']:<15} {host['hostname']:<30} {host['ip_address']:<20} {host['host_groups']:<30}")
+                    hostname = host['hostname'][:24] if len(host['hostname']) > 24 else host['hostname']
+                    groups = host['host_groups'][:24] if len(host['host_groups']) > 24 else host['host_groups']
+                    lines.append(f"{host['host_id']:<12} {hostname:<25} {host['ip_address']:<15} {groups:<25}")
+                    templates = host.get('templates', 'N/A')
+                    if templates != 'N/A':
+                        lines.append(f"             Templates: {templates}")
             
             # Hosts removidos
             if comparison['removed']:
                 lines.append("\n" + "=" * 80)
                 lines.append(f"HOSTS REMOVIDOS ({len(comparison['removed'])})")
                 lines.append("=" * 80)
-                lines.append(f"{'ID':<15} {'Nome do Host':<30} {'Endereço IP':<20} {'Grupos':<30}")
+                lines.append(f"{'ID':<12} {'Nome':<25} {'IP':<15} {'Grupos':<25}")
                 lines.append("-" * 80)
                 for host in sorted(comparison['removed'], key=lambda x: x['hostname']):
-                    lines.append(f"{host['host_id']:<15} {host['hostname']:<30} {host['ip_address']:<20} {host['host_groups']:<30}")
+                    hostname = host['hostname'][:24] if len(host['hostname']) > 24 else host['hostname']
+                    groups = host['host_groups'][:24] if len(host['host_groups']) > 24 else host['host_groups']
+                    lines.append(f"{host['host_id']:<12} {hostname:<25} {host['ip_address']:<15} {groups:<25}")
+                    templates = host.get('templates', 'N/A')
+                    if templates != 'N/A':
+                        lines.append(f"             Templates: {templates}")
             
             # Hosts modificados
             if comparison['modified']:
@@ -388,6 +414,10 @@ class ReportGenerator:
                         old_groups = host['old_groups'][:30] if len(host['old_groups']) > 30 else host['old_groups']
                         new_groups = host['new_groups'][:30] if len(host['new_groups']) > 30 else host['new_groups']
                         lines.append(f"{host['host_id']:<15} {host['hostname']:<30} {'Grupos':<15} {old_groups:<30} {new_groups:<30}")
+                    if host.get('templates_changed'):
+                        old_templates = host.get('old_templates', 'N/A')[:30] if len(host.get('old_templates', 'N/A')) > 30 else host.get('old_templates', 'N/A')
+                        new_templates = host.get('new_templates', 'N/A')[:30] if len(host.get('new_templates', 'N/A')) > 30 else host.get('new_templates', 'N/A')
+                        lines.append(f"{host['host_id']:<15} {host['hostname']:<30} {'Templates':<15} {old_templates:<30} {new_templates:<30}")
         
         lines.append("\n" + "=" * 80)
         lines.append(f"Fim do Relatório - Gerado em {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}")

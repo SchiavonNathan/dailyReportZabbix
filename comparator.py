@@ -37,15 +37,17 @@ class HostComparator:
         current_dict = {host['host_id']: host for host in current_hosts}
         previous_dict = {host['host_id']: host for host in previous_hosts}
         
-        # Identifica hosts com mudança de IP (mesmo ID, IP diferente)
+        # Identifica hosts com mudança de IP, grupos ou templates (mesmo ID, atributos diferentes)
         modified_hosts = []
         for host_id in current_ids & previous_ids:
             current_ip = current_dict[host_id]['ip_address']
             previous_ip = previous_dict[host_id]['ip_address']
             current_groups = current_dict[host_id]['host_groups']
             previous_groups = previous_dict[host_id]['host_groups']
+            current_templates = current_dict[host_id].get('templates', 'N/A')
+            previous_templates = previous_dict[host_id].get('templates', 'N/A')
             
-            if current_ip != previous_ip or current_groups != previous_groups:
+            if current_ip != previous_ip or current_groups != previous_groups or current_templates != previous_templates:
                 modified_hosts.append({
                     'host_id': host_id,
                     'hostname': current_dict[host_id]['hostname'],
@@ -53,8 +55,11 @@ class HostComparator:
                     'new_ip': current_ip,
                     'old_groups': previous_groups,
                     'new_groups': current_groups,
+                    'old_templates': previous_templates,
+                    'new_templates': current_templates,
                     'ip_changed': current_ip != previous_ip,
-                    'groups_changed': current_groups != previous_groups
+                    'groups_changed': current_groups != previous_groups,
+                    'templates_changed': current_templates != previous_templates
                 })
         
         # Monta resultado
