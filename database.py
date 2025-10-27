@@ -18,7 +18,6 @@ class DatabaseManager:
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
         
-        # Tabela para armazenar histórico de hosts
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS hosts_history (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -31,7 +30,6 @@ class DatabaseManager:
             )
         ''')
         
-        # Índice para melhorar performance de consultas por data
         cursor.execute('''
             CREATE INDEX IF NOT EXISTS idx_collection_date 
             ON hosts_history(collection_date)
@@ -48,7 +46,6 @@ class DatabaseManager:
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
         
-        # Remove registros existentes da mesma data para evitar duplicatas
         cursor.execute('''
             DELETE FROM hosts_history
             WHERE collection_date = ?
@@ -56,7 +53,6 @@ class DatabaseManager:
         
         logger.info(f"Registros anteriores da data {collection_date} removidos")
         
-        # Insere os novos registros
         for host in hosts:
             cursor.execute('''
                 INSERT INTO hosts_history (host_id, hostname, ip_address, host_groups, templates, collection_date)
