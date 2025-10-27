@@ -5,7 +5,6 @@ from typing import List, Dict, Tuple
 from datetime import datetime, timedelta
 import logging
 
-# Não configura logging aqui - deixa para o módulo principal configurar
 logger = logging.getLogger(__name__)
 
 
@@ -15,29 +14,15 @@ class HostComparator:
     @staticmethod
     def compare_hosts(current_hosts: List[Dict[str, str]], 
                      previous_hosts: List[Dict[str, str]]) -> Dict[str, List[Dict[str, str]]]:
-        """
-        Compara duas listas de hosts e identifica adições e remoções.
-        
-        Args:
-            current_hosts: Lista de hosts da data atual
-            previous_hosts: Lista de hosts da data anterior
-            
-        Returns:
-            Dicionário com listas de hosts adicionados e removidos
-        """
-        # Cria sets com IDs dos hosts para comparação eficiente
         current_ids = {host['host_id'] for host in current_hosts}
         previous_ids = {host['host_id'] for host in previous_hosts}
         
-        # Identifica IDs adicionados e removidos
         added_ids = current_ids - previous_ids
         removed_ids = previous_ids - current_ids
         
-        # Cria dicionários para acesso rápido
         current_dict = {host['host_id']: host for host in current_hosts}
         previous_dict = {host['host_id']: host for host in previous_hosts}
         
-        # Identifica hosts com mudança de IP, grupos ou templates (mesmo ID, atributos diferentes)
         modified_hosts = []
         for host_id in current_ids & previous_ids:
             current_ip = current_dict[host_id]['ip_address']
@@ -62,7 +47,6 @@ class HostComparator:
                     'templates_changed': current_templates != previous_templates
                 })
         
-        # Monta resultado
         result = {
             'added': [current_dict[host_id] for host_id in added_ids],
             'removed': [previous_dict[host_id] for host_id in removed_ids],
@@ -79,15 +63,6 @@ class HostComparator:
     
     @staticmethod
     def get_summary(comparison: Dict) -> Dict[str, int]:
-        """
-        Retorna um resumo das mudanças identificadas.
-        
-        Args:
-            comparison: Resultado da comparação de hosts
-            
-        Returns:
-            Dicionário com contagens de mudanças
-        """
         return {
             'hosts_added': len(comparison['added']),
             'hosts_removed': len(comparison['removed']),
@@ -99,15 +74,6 @@ class HostComparator:
     
     @staticmethod
     def has_changes(comparison: Dict) -> bool:
-        """
-        Verifica se houve alguma mudança.
-        
-        Args:
-            comparison: Resultado da comparação de hosts
-            
-        Returns:
-            True se houve mudanças, False caso contrário
-        """
         return (len(comparison['added']) > 0 or 
                 len(comparison['removed']) > 0 or 
                 len(comparison['modified']) > 0)

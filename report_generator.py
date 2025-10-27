@@ -6,20 +6,11 @@ from typing import Dict
 import logging
 import os
 
-# Não configura logging aqui - deixa para o módulo principal configurar
 logger = logging.getLogger(__name__)
 
 
 class ReportGenerator:
-    """Gerador de relatórios de mudanças em hosts."""
-    
     def __init__(self, output_dir: str = "reports"):
-        """
-        Inicializa o gerador de relatórios.
-        
-        Args:
-            output_dir: Diretório onde os relatórios serão salvos
-        """
         self.output_dir = output_dir
         if not os.path.exists(output_dir):
             os.makedirs(output_dir)
@@ -27,17 +18,6 @@ class ReportGenerator:
     
     def generate_html_report(self, comparison: Dict, current_date: str, 
                             previous_date: str) -> str:
-        """
-        Gera um relatório em HTML das mudanças detectadas.
-        
-        Args:
-            comparison: Resultado da comparação de hosts
-            current_date: Data atual da coleta
-            previous_date: Data anterior da coleta
-            
-        Returns:
-            Caminho do arquivo HTML gerado
-        """
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         filename = f"zabbix_report_{current_date}_{timestamp}.html"
         filepath = os.path.join(self.output_dir, filename)
@@ -52,17 +32,6 @@ class ReportGenerator:
     
     def generate_text_report(self, comparison: Dict, current_date: str, 
                             previous_date: str) -> str:
-        """
-        Gera um relatório em texto das mudanças detectadas.
-        
-        Args:
-            comparison: Resultado da comparação de hosts
-            current_date: Data atual da coleta
-            previous_date: Data anterior da coleta
-            
-        Returns:
-            Caminho do arquivo de texto gerado
-        """
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         filename = f"zabbix_report_{current_date}_{timestamp}.txt"
         filepath = os.path.join(self.output_dir, filename)
@@ -77,7 +46,6 @@ class ReportGenerator:
     
     def _build_html_content(self, comparison: Dict, current_date: str, 
                            previous_date: str) -> str:
-        """Constrói o conteúdo HTML do relatório."""
         
         has_changes = (len(comparison['added']) > 0 or 
                       len(comparison['removed']) > 0 or 
@@ -213,7 +181,6 @@ class ReportGenerator:
         </div>
 """
         else:
-            # Hosts adicionados
             if comparison['added']:
                 html += f"""
         <h2>✅ Hosts Adicionados ({len(comparison['added'])})</h2>
@@ -245,7 +212,6 @@ class ReportGenerator:
         </table>
 """
             
-            # Hosts removidos
             if comparison['removed']:
                 html += f"""
         <h2>❌ Hosts Removidos ({len(comparison['removed'])})</h2>
@@ -277,7 +243,6 @@ class ReportGenerator:
         </table>
 """
             
-            # Hosts modificados (mudança de IP)
             if comparison['modified']:
                 html += f"""
         <h2>🔄 Hosts Modificados ({len(comparison['modified'])})</h2>
@@ -342,7 +307,6 @@ class ReportGenerator:
     
     def _build_text_content(self, comparison: Dict, current_date: str, 
                            previous_date: str) -> str:
-        """Constrói o conteúdo de texto do relatório."""
         
         lines = []
         lines.append("=" * 80)
@@ -370,7 +334,6 @@ class ReportGenerator:
             lines.append("✅ NENHUMA MUDANÇA DETECTADA")
             lines.append("=" * 80)
         else:
-            # Hosts adicionados
             if comparison['added']:
                 lines.append("\n" + "=" * 80)
                 lines.append(f"HOSTS ADICIONADOS ({len(comparison['added'])})")
@@ -385,7 +348,6 @@ class ReportGenerator:
                     if templates != 'N/A':
                         lines.append(f"             Templates: {templates}")
             
-            # Hosts removidos
             if comparison['removed']:
                 lines.append("\n" + "=" * 80)
                 lines.append(f"HOSTS REMOVIDOS ({len(comparison['removed'])})")
@@ -400,7 +362,6 @@ class ReportGenerator:
                     if templates != 'N/A':
                         lines.append(f"             Templates: {templates}")
             
-            # Hosts modificados
             if comparison['modified']:
                 lines.append("\n" + "=" * 80)
                 lines.append(f"HOSTS MODIFICADOS ({len(comparison['modified'])})")

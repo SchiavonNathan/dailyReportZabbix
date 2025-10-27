@@ -10,25 +10,12 @@ from email import encoders
 from typing import List
 import logging
 
-# Não configura logging aqui - deixa para o módulo principal configurar
 logger = logging.getLogger(__name__)
 
 
 class EmailSender:
-    """Gerenciador de envio de emails."""
-    
     def __init__(self, smtp_server: str, smtp_port: int, username: str, 
                  password: str, use_tls: bool = True):
-        """
-        Inicializa o enviador de emails.
-        
-        Args:
-            smtp_server: Servidor SMTP (ex: smtp.office365.com)
-            smtp_port: Porta SMTP (587 para TLS, 465 para SSL)
-            username: Email do remetente
-            password: Senha do email
-            use_tls: Se deve usar TLS (True para Office 365)
-        """
         self.smtp_server = smtp_server
         self.smtp_port = smtp_port
         self.username = username
@@ -38,19 +25,6 @@ class EmailSender:
     def send_report_email(self, recipient_emails: List[str], subject: str,
                          body_html: str, body_text: str = None,
                          attachments: List[str] = None) -> bool:
-        """
-        Envia email com relatório.
-        
-        Args:
-            recipient_emails: Lista de emails destinatários
-            subject: Assunto do email
-            body_html: Corpo do email em HTML
-            body_text: Corpo do email em texto (opcional)
-            attachments: Lista de caminhos de arquivos para anexar
-            
-        Returns:
-            True se enviado com sucesso, False caso contrário
-        """
         try:
             # Cria mensagem
             msg = MIMEMultipart('alternative')
@@ -58,7 +32,6 @@ class EmailSender:
             msg['To'] = ', '.join(recipient_emails)
             msg['Subject'] = subject
             
-            # Adiciona corpo do email
             if body_text:
                 part_text = MIMEText(body_text, 'plain', 'utf-8')
                 msg.attach(part_text)
@@ -66,7 +39,6 @@ class EmailSender:
             part_html = MIMEText(body_html, 'html', 'utf-8')
             msg.attach(part_html)
             
-            # Adiciona anexos
             if attachments:
                 for filepath in attachments:
                     if os.path.exists(filepath):
@@ -74,7 +46,6 @@ class EmailSender:
                     else:
                         logger.warning(f"Arquivo não encontrado: {filepath}")
             
-            # Conecta e envia
             logger.info(f"Conectando ao servidor SMTP: {self.smtp_server}:{self.smtp_port}")
             
             if self.use_tls:
@@ -97,13 +68,6 @@ class EmailSender:
             return False
     
     def _attach_file(self, msg: MIMEMultipart, filepath: str):
-        """
-        Anexa um arquivo à mensagem.
-        
-        Args:
-            msg: Mensagem MIME
-            filepath: Caminho do arquivo
-        """
         try:
             filename = os.path.basename(filepath)
             
@@ -127,20 +91,6 @@ class EmailSender:
                           report_date: str, summary: dict,
                           has_changes: bool, comparison: dict = None,
                           report_files: List[str] = None) -> bool:
-        """
-        Envia email simplificado com resumo do relatório.
-        
-        Args:
-            recipient_emails: Lista de emails destinatários
-            report_date: Data do relatório
-            summary: Dicionário com resumo das mudanças
-            has_changes: Se houve mudanças
-            comparison: Dicionário completo com dados da comparação
-            report_files: Lista de arquivos de relatório para anexar
-            
-        Returns:
-            True se enviado com sucesso, False caso contrário
-        """
         subject = f"Relatório Zabbix - {report_date}"
         
         if not has_changes:
@@ -148,10 +98,8 @@ class EmailSender:
         elif summary['hosts_added'] > 0 or summary['hosts_removed'] > 0:
             subject += f" - {summary['hosts_added']} Adicionados, {summary['hosts_removed']} Removidos"
         
-        # Corpo HTML
         body_html = self._build_email_body_html(report_date, summary, has_changes, comparison)
         
-        # Corpo texto
         body_text = self._build_email_body_text(report_date, summary, has_changes, comparison)
         
         return self.send_report_email(
@@ -164,7 +112,6 @@ class EmailSender:
     
     def _build_email_body_html(self, report_date: str, summary: dict, 
                                has_changes: bool, comparison: dict = None) -> str:
-        """Constrói corpo do email em HTML."""
         
         status_icon = "✅" if not has_changes else "⚠️"
         status_text = "Nenhuma mudança detectada" if not has_changes else "Mudanças detectadas"
@@ -340,7 +287,6 @@ class EmailSender:
         </div>
 """
         
-        # Detalhes dos hosts adicionados
         if comparison and comparison.get('added'):
             html += """
         <div class="hosts-section">
@@ -374,7 +320,6 @@ class EmailSender:
         </div>
 """
         
-        # Detalhes dos hosts removidos
         if comparison and comparison.get('removed'):
             html += """
         <div class="hosts-section">
@@ -408,7 +353,6 @@ class EmailSender:
         </div>
 """
         
-        # Detalhes dos hosts modificados
         if comparison and comparison.get('modified'):
             html += """
         <div class="hosts-section">
@@ -511,7 +455,6 @@ Hosts Removidos: {summary['hosts_removed']}
 Hosts Modificados: {summary['hosts_modified']}
 """
         
-        # Detalhes dos hosts adicionados
         if comparison and comparison.get('added'):
             text += f"\n{'=' * 80}\n"
             text += f"HOSTS ADICIONADOS ({len(comparison['added'])})\n"
@@ -526,7 +469,6 @@ Hosts Modificados: {summary['hosts_modified']}
                 if templates != 'N/A':
                     text += f"             Templates: {templates}\n"
         
-        # Detalhes dos hosts removidos
         if comparison and comparison.get('removed'):
             text += f"\n{'=' * 80}\n"
             text += f"HOSTS REMOVIDOS ({len(comparison['removed'])})\n"
@@ -541,7 +483,6 @@ Hosts Modificados: {summary['hosts_modified']}
                 if templates != 'N/A':
                     text += f"             Templates: {templates}\n"
         
-        # Detalhes dos hosts modificados
         if comparison and comparison.get('modified'):
             text += f"\n{'=' * 80}\n"
             text += f"HOSTS MODIFICADOS ({len(comparison['modified'])})\n"

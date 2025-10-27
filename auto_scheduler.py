@@ -26,20 +26,17 @@ class APMJsonFormatter(logging.Formatter):
             log_record["exception"] = self.formatException(record.exc_info)
         return json.dumps(log_record)
 
-# Função para remover acentos de strings
 def remove_acentos(text):
     if not isinstance(text, str):
         return text
     return unicodedata.normalize('NFKD', text).encode('ASCII', 'ignore').decode('ASCII')
 
-# Patch no logger para remover acentos das mensagens
 class APMJsonFormatterNoAcento(APMJsonFormatter):
     def format(self, record):
         if hasattr(record, 'msg') and isinstance(record.msg, str):
             record.msg = remove_acentos(record.msg)
         return super().format(record)
 
-# Configura logging apenas uma vez
 handler = logging.StreamHandler()
 handler.setFormatter(APMJsonFormatterNoAcento())
 
@@ -60,28 +57,16 @@ def get_period_dates(db, days):
 
 
 def generate_period_summary(db, dates):
-    """
-    Gera resumo do período comparando múltiplas datas.
-    
-    Args:
-        db: Instância do DatabaseManager
-        dates: Lista de datas ordenadas para o período
-        
-    Returns:
-        Tuple com (summary, comparison)
-    """
     comparator = HostComparator()
     all_added = []
     all_removed = []
     all_modified = []
     
-    # Pega total atual da data mais recente e total anterior da data mais antiga
-    current_hosts_final = db.get_hosts_by_date(dates[-1])  # Última data (mais recente)
-    previous_hosts_initial = db.get_hosts_by_date(dates[0])  # Primeira data (mais antiga)
+    current_hosts_final = db.get_hosts_by_date(dates[-1]) 
+    previous_hosts_initial = db.get_hosts_by_date(dates[0])  
     total_current = len(current_hosts_final)
     total_previous = len(previous_hosts_initial)
     
-    # Soma todas as mudanças do período
     total_added = 0
     total_removed = 0
     total_modified = 0
@@ -116,13 +101,6 @@ def generate_period_summary(db, dates):
 
 
 def send_period_report(period_name, days):
-    """
-    Gera e envia relatório de período (semanal ou mensal).
-    
-    Args:
-        period_name: Nome do período ('semanal' ou 'mensal')
-        days: Número de dias do período
-    """
     logger.info(f"Iniciando relatorio de {period_name}...")
     
     config = load_config()
@@ -184,7 +162,6 @@ def send_period_report(period_name, days):
 
 
 def daily_job():
-    """Executa o job diário de coleta e geração de relatório."""
     logger.info("=" * 80)
     logger.info("Iniciando job diario...")
     logger.info("=" * 80)
@@ -192,13 +169,11 @@ def daily_job():
         config = load_config()
         logger.info("Configuracoes carregadas com sucesso")
         
-        # Coleta hosts do Zabbix
         collection_date = collect_hosts(config)
         
         if collection_date:
             logger.info(f"Coleta concluida para a data: {collection_date}")
             
-            # Gera relatório comparativo
             generate_comparison_report(config)
             logger.info("Relatorio diario concluido!")
         else:
@@ -208,7 +183,6 @@ def daily_job():
     logger.info("=" * 80)
 
 def weekly_job():
-    """Executa o job semanal."""
     logger.info("=" * 80)
     logger.info("Iniciando job semanal...")
     logger.info("=" * 80)
@@ -220,16 +194,12 @@ def weekly_job():
     logger.info("=" * 80)
 
 def monthly_job_guard():
-    """
-    Guarda para executar o job mensal apenas no dia 1 do mês.
-    """
     if datetime.now().day == 1:
         monthly_job()
     else:
         logger.debug(f"Dia {datetime.now().day} - pulando job mensal (executa apenas no dia 1)")
 
 def monthly_job():
-    """Executa o job mensal."""
     logger.info("=" * 80)
     logger.info("Iniciando job mensal...")
     logger.info("=" * 80)
@@ -242,10 +212,6 @@ def monthly_job():
 
 
 def main():
-    """
-    Função principal do agendador.
-    Configura os jobs e entra em loop de execução.
-    """
     logger.info("=" * 80)
     logger.info("Agendador de relatorios Zabbix iniciado")
     logger.info("=" * 80)

@@ -6,25 +6,15 @@ from datetime import datetime
 from typing import List, Dict, Tuple
 import logging
 
-# Não configura logging aqui - deixa para o módulo principal configurar
 logger = logging.getLogger(__name__)
 
 
 class DatabaseManager:
-    """Gerenciador de banco de dados para armazenar hosts do Zabbix."""
-    
     def __init__(self, db_path: str = "zabbix_hosts.db"):
-        """
-        Inicializa o gerenciador de banco de dados.
-        
-        Args:
-            db_path: Caminho para o arquivo do banco de dados SQLite
-        """
         self.db_path = db_path
         self.init_database()
     
     def init_database(self):
-        """Cria as tabelas necessárias se não existirem."""
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
         
@@ -52,14 +42,6 @@ class DatabaseManager:
         logger.info(f"Banco de dados inicializado: {self.db_path}")
     
     def save_hosts(self, hosts: List[Dict[str, str]], collection_date: str = None):
-        """
-        Salva a lista de hosts no banco de dados.
-        Remove registros existentes da mesma data antes de salvar para evitar duplicatas.
-        
-        Args:
-            hosts: Lista de dicionários com informações dos hosts
-            collection_date: Data da coleta (formato YYYY-MM-DD). Se None, usa data atual
-        """
         if collection_date is None:
             collection_date = datetime.now().strftime("%Y-%m-%d")
         
@@ -93,15 +75,6 @@ class DatabaseManager:
         logger.info(f"Salvos {len(hosts)} hosts para a data {collection_date}")
     
     def get_hosts_by_date(self, date: str) -> List[Dict[str, str]]:
-        """
-        Recupera todos os hosts de uma data específica.
-        
-        Args:
-            date: Data no formato YYYY-MM-DD
-            
-        Returns:
-            Lista de dicionários com informações dos hosts
-        """
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
         
@@ -129,12 +102,6 @@ class DatabaseManager:
         return hosts
     
     def get_latest_collection_date(self) -> str:
-        """
-        Retorna a data da última coleta realizada.
-        
-        Returns:
-            Data no formato YYYY-MM-DD ou None se não houver dados
-        """
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
         
@@ -151,15 +118,6 @@ class DatabaseManager:
         return result[0] if result else None
     
     def check_date_exists(self, date: str) -> bool:
-        """
-        Verifica se já existe uma coleta para a data especificada.
-        
-        Args:
-            date: Data no formato YYYY-MM-DD
-            
-        Returns:
-            True se existir, False caso contrário
-        """
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
         
@@ -174,12 +132,6 @@ class DatabaseManager:
         return count > 0
     
     def get_all_collection_dates(self) -> List[str]:
-        """
-        Retorna todas as datas de coleta disponíveis.
-        
-        Returns:
-            Lista de datas no formato YYYY-MM-DD
-        """
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
         

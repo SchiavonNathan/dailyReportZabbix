@@ -27,7 +27,6 @@ logger = logging.getLogger(__name__)
 
 
 def load_config():
-    """Carrega configurações do arquivo .env"""
     load_dotenv()
     
     config = {
@@ -47,13 +46,11 @@ def load_config():
         'email_attach_reports': os.getenv('EMAIL_ATTACH_REPORTS', 'true').lower() == 'true'
     }
     
-    # Validação de configurações obrigatórias
     if not config['zabbix_url'] or not config['zabbix_username'] or not config['zabbix_password']:
         logger.error("Configurações do Zabbix não encontradas no arquivo .env")
         logger.error("Copie .env.example para .env e configure suas credenciais")
         sys.exit(1)
     
-    # Validação de configurações de email se ativado
     if config['send_email']:
         if not config['smtp_username'] or not config['smtp_password']:
             logger.warning("Envio de email ativado mas credenciais SMTP não configuradas")
@@ -68,18 +65,8 @@ def load_config():
 
 
 def collect_hosts(config):
-    """
-    Coleta hosts do Zabbix e salva no banco de dados.
-    
-    Args:
-        config: Dicionário com configurações
-        
-    Returns:
-        Data da coleta no formato YYYY-MM-DD
-    """
     logger.info("Iniciando coleta de hosts do Zabbix...")
     
-    # Conecta ao Zabbix e coleta hosts
     with ZabbixCollector(
         config['zabbix_url'],
         config['zabbix_username'],
@@ -87,11 +74,9 @@ def collect_hosts(config):
     ) as collector:
         hosts = collector.get_all_hosts()
     
-    # Salva no banco de dados
     db = DatabaseManager(config['database_path'])
     collection_date = datetime.now().strftime("%Y-%m-%d")
     
-    # Verifica se já existe coleta para hoje
     if db.check_date_exists(collection_date):
         logger.warning(f"Já existe uma coleta para a data {collection_date}")
         response = input("Deseja substituir? (s/n): ").lower()
@@ -106,41 +91,29 @@ def collect_hosts(config):
 
 
 def generate_comparison_report(config, current_date=None, previous_date=None):
-    """
-    Compara hosts entre duas datas e gera relatório.
-    
-    Args:
-        config: Dicionário com configurações
-        current_date: Data atual (YYYY-MM-DD). Se None, usa hoje
-        previous_date: Data anterior (YYYY-MM-DD). Se None, usa dia anterior
-    """
     logger.info("Iniciando geração de relatório comparativo...")
     
     db = DatabaseManager(config['database_path'])
     
-    # Define datas
     if current_date is None:
         current_date = datetime.now().strftime("%Y-%m-%d")
     
     if previous_date is None:
-        # Busca a data da coleta anterior à data atual
         all_dates = db.get_all_collection_dates()
         if not all_dates:
             logger.error("Nenhuma coleta encontrada no banco de dados")
             return
         
-        # Filtra datas anteriores à data atual
         earlier_dates = [d for d in all_dates if d < current_date]
         if not earlier_dates:
             logger.warning(f"Não há coleta anterior a {current_date} para comparação")
             logger.info("Execute a coleta novamente amanhã para gerar comparações")
             return
         
-        previous_date = earlier_dates[0]  # A mais recente antes da atual
+        previous_date = earlier_dates[0]
     
     logger.info(f"Comparando {current_date} com {previous_date}")
     
-    # Busca dados
     current_hosts = db.get_hosts_by_date(current_date)
     previous_hosts = db.get_hosts_by_date(previous_date)
     
@@ -152,11 +125,9 @@ def generate_comparison_report(config, current_date=None, previous_date=None):
         logger.error(f"Nenhum host encontrado para a data {previous_date}")
         return
     
-    # Compara hosts
     comparator = HostComparator()
     comparison = comparator.compare_hosts(current_hosts, previous_hosts)
     
-    # Exibe resumo no console
     summary = comparator.get_summary(comparison)
     logger.info("=" * 60)
     logger.info("RESUMO DA COMPARAÇÃO")
@@ -169,7 +140,6 @@ def generate_comparison_report(config, current_date=None, previous_date=None):
     logger.info(f"Variação líquida: {summary['net_change']:+d}")
     logger.info("=" * 60)
     
-    # Gera relatórios
     report_gen = ReportGenerator(config['reports_dir'])
     report_format = config['report_format'].lower()
     
@@ -185,7 +155,6 @@ def generate_comparison_report(config, current_date=None, previous_date=None):
         logger.info(f"✅ Relatório de texto gerado: {text_path}")
         report_files.append(text_path)
     
-    # Envia email se configurado
     if config['send_email']:
         logger.info("=" * 60)
         logger.info("Enviando relatório por email...")
@@ -198,10 +167,8 @@ def generate_comparison_report(config, current_date=None, previous_date=None):
             use_tls=config['smtp_use_tls']
         )
         
-        # Prepara anexos
         attachments = report_files if config['email_attach_reports'] else None
         
-        # Envia email
         success = email_sender.send_simple_report(
             recipient_emails=config['email_recipients'],
             report_date=current_date,
@@ -221,7 +188,6 @@ def generate_comparison_report(config, current_date=None, previous_date=None):
 
 
 def main():
-    """Função principal do script."""
     parser = argparse.ArgumentParser(
         description='Coleta hosts do Zabbix e gera relatórios de mudanças'
     )

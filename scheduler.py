@@ -20,7 +20,6 @@ logger = logging.getLogger(__name__)
 
 
 def daily_job():
-    """Job que será executado diariamente."""
     logger.info("=" * 80)
     logger.info(f"Iniciando job diário em {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}")
     logger.info("=" * 80)
@@ -28,12 +27,10 @@ def daily_job():
     try:
         config = load_config()
         
-        # Coleta hosts do dia
         logger.info("Etapa 1: Coletando hosts do Zabbix...")
         collection_date = collect_hosts(config)
         
         if collection_date:
-            # Gera relatório comparativo
             logger.info("Etapa 2: Gerando relatório comparativo...")
             generate_comparison_report(config)
             
@@ -48,9 +45,6 @@ def daily_job():
 
 
 def main():
-    """Função principal do agendador."""
-    # Configuração do horário de execução
-    # Por padrão, executa às 6:00 da manhã todos os dias
     EXECUTION_TIME = "06:00"
     
     logger.info("=" * 80)
@@ -60,10 +54,8 @@ def main():
     logger.info("Pressione Ctrl+C para interromper")
     logger.info("=" * 80)
     
-    # Agenda o job
     schedule.every().day.at(EXECUTION_TIME).do(daily_job)
     
-    # Opção para executar imediatamente ao iniciar
     logger.info("Deseja executar o job imediatamente? (s/n): ", )
     try:
         response = input().lower()
@@ -73,13 +65,12 @@ def main():
     except:
         pass
     
-    # Loop principal
     logger.info(f"\nAgendador ativo. Próxima execução: {schedule.next_run()}")
     
     try:
         while True:
             schedule.run_pending()
-            time.sleep(60)  # Verifica a cada minuto
+            time.sleep(60) 
             
     except KeyboardInterrupt:
         logger.info("\n" + "=" * 80)

@@ -15,14 +15,11 @@ logger = logging.getLogger(__name__)
 
 
 def test_email():
-    """Testa o envio de email com as configurações do .env"""
-    
     print("=" * 70)
     print("TESTE DE ENVIO DE EMAIL - RELATÓRIO ZABBIX")
     print("=" * 70)
     print()
     
-    # Carrega configurações
     load_dotenv()
     
     smtp_server = os.getenv('SMTP_SERVER', 'smtp.office365.com')
@@ -32,7 +29,6 @@ def test_email():
     smtp_use_tls = os.getenv('SMTP_USE_TLS', 'true').lower() == 'true'
     email_recipients = os.getenv('EMAIL_RECIPIENTS', '').split(',') if os.getenv('EMAIL_RECIPIENTS') else []
     
-    # Validação
     print("📋 Configurações carregadas:")
     print(f"   Servidor SMTP: {smtp_server}")
     print(f"   Porta: {smtp_port}")
@@ -41,7 +37,6 @@ def test_email():
     print(f"   Destinatários: {', '.join(email_recipients) if email_recipients else 'Nenhum'}")
     print()
     
-    # Verifica se as configurações estão completas
     if not smtp_username:
         print("❌ ERRO: SMTP_USERNAME não configurado no arquivo .env")
         print("   Configure seu email em SMTP_USERNAME")
@@ -62,7 +57,6 @@ def test_email():
     print("-" * 70)
     print()
     
-    # Confirmação
     print("📧 Email de teste será enviado para:")
     for email in email_recipients:
         print(f"   • {email.strip()}")
@@ -79,7 +73,6 @@ def test_email():
     print("=" * 70)
     print()
     
-    # Cria o enviador de email
     try:
         email_sender = EmailSender(
             smtp_server=smtp_server,
@@ -89,7 +82,6 @@ def test_email():
             use_tls=smtp_use_tls
         )
         
-        # Dados de teste
         summary = {
             'hosts_added': 5,
             'hosts_removed': 2,
@@ -99,7 +91,6 @@ def test_email():
             'net_change': 3
         }
         
-        # Dados de comparação de teste
         comparison = {
             'added': [
                 {'host_id': '10001', 'hostname': 'server-web-01', 'ip_address': '192.168.1.10', 'host_groups': 'Linux Servers, Web'},
@@ -148,14 +139,13 @@ def test_email():
             'total_previous': 147
         }
         
-        # Envia email de teste
         success = email_sender.send_simple_report(
             recipient_emails=[email.strip() for email in email_recipients],
             report_date="2025-10-21 (TESTE)",
             summary=summary,
             has_changes=True,
             comparison=comparison,
-            report_files=None  # Sem anexos no teste
+            report_files=None
         )
         
         print()

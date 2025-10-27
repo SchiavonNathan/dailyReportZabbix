@@ -3,7 +3,6 @@ import sqlite3
 conn = sqlite3.connect('zabbix_hosts.db')
 cursor = conn.cursor()
 
-# Conta quantos registros existem por data
 cursor.execute('''
     SELECT collection_date, COUNT(*) as total
     FROM hosts_history
@@ -21,7 +20,6 @@ for date, total in rows:
 
 print("\n" + "=" * 80)
 
-# Verifica se há duplicatas (mesmo host_id na mesma data)
 cursor.execute('''
     SELECT collection_date, host_id, COUNT(*) as count
     FROM hosts_history

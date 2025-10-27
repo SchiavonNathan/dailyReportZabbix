@@ -12,7 +12,6 @@ print("=" * 80)
 conn = sqlite3.connect('zabbix_hosts.db')
 cursor = conn.cursor()
 
-# Verifica situação atual
 cursor.execute('''
     SELECT collection_date, COUNT(*) as total, COUNT(DISTINCT host_id) as unique_hosts
     FROM hosts_history
@@ -32,7 +31,6 @@ for date, total, unique in rows:
 
 print(f"\nTotal de registros no banco: {total_before}")
 
-# Pergunta se quer limpar
 print("\n" + "=" * 80)
 response = input("\n🗑️  Deseja limpar as duplicatas? (s/n): ")
 
@@ -43,12 +41,10 @@ if response.lower() != 's':
 
 print("\n🔄 Limpando duplicatas...")
 
-# Para cada data, remove duplicatas mantendo apenas o registro mais recente
 cursor.execute('SELECT DISTINCT collection_date FROM hosts_history')
 dates = cursor.fetchall()
 
 for (date,) in dates:
-    # Remove duplicatas mantendo apenas o id mais recente para cada host_id
     cursor.execute('''
         DELETE FROM hosts_history
         WHERE id NOT IN (
@@ -66,7 +62,6 @@ for (date,) in dates:
 
 conn.commit()
 
-# Verifica situação final
 cursor.execute('''
     SELECT collection_date, COUNT(*) as total
     FROM hosts_history
@@ -86,7 +81,6 @@ for date, total in rows:
 print(f"\nTotal de registros no banco: {total_after}")
 print(f"Registros removidos: {total_before - total_after}")
 
-# Otimiza o banco
 print("\n🔧 Otimizando banco de dados...")
 cursor.execute('VACUUM')
 conn.commit()
