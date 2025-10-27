@@ -26,7 +26,8 @@ class DatabaseManager:
                 ip_address TEXT,
                 host_groups TEXT,
                 collection_date DATE NOT NULL,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                templates TEXT DEFAULT 'N/A'
             )
         ''')
         
